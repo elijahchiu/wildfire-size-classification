@@ -1,0 +1,5 @@
+args <- commandArgs(trailingOnly = TRUE)
+expected <- read.csv(args[1])
+actual <- read.csv("results/test_metrics.csv")
+stopifnot(identical(expected$Model, actual$Model), isTRUE(all.equal(expected[-1], actual[-1], tolerance = 1e-06)))
+cat("Reproduced committed metrics within tolerance 1e-6.\n")

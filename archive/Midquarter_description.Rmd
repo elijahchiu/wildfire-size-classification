@@ -1,0 +1,242 @@
+---
+title: "STA 141A: Midquarter report"
+author: "Elijah Chiu"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+wildfires <- read.csv("wildfires_sample_100k.csv")
+library(tidyverse)
+library(lubridate)
+library(maps)
+```
+
+
+---
+
+###  Task 1 Understanding the Dataset
+
+**(a)** Print the number of rows and columns, and list names and data types.
+
+**(b)** Identify variables with missing values and any other issues.
+
+**(c)** Write 4–6 sentences describing your initial impressions and data-quality concerns.
+
+```{r}
+# Task 1a
+dim(wildfires)
+names(wildfires)
+str(wildfires)
+
+# Task 1b
+missing_counts <- colSums(is.na(wildfires))
+
+missing_counts[missing_counts > 0]
+
+# Task 1c
+# The dataset contains 100,000 wildfire observations and 39 variables that describe different aspects of each fire, including time, location, and administrative information. Important variables such as FIRE_YEAR, FIRE_SIZE, LATITUDE, and LONGITUDE do not have missing values, which makes them reliable for analyzing temporal and spatial patterns. However, several reporting-related variables like ICS_209 fields, MTBS fields, and COMPLEX_NAME have very high amounts of missing data, in some cases over 90%, which limits their usefulness. Some containment-related variables, such as CONT_DATE and CONT_TIME, also have a significant amount of missing values. Overall, the dataset seems suitable for exploring general wildfire trends, but certain administrative details may not be dependable for deeper analysis.
+```
+---
+
+### Task 2 Exploring Temporal Patterns
+
+Use `FIRE_YEAR` and `DISCOVERY_DOY`.
+**(a)** Create a new column `FIRE_DATE` from `FIRE_YEAR` and `DISCOVERY_DOY`. (Note: Please ignore the column `DISCOVERY_DATE`.)
+
+**(b)** Plot annual number of wildfires by year.
+
+**(c)** Plot average fire size per year by year. 
+
+**(d)** Write 3–5 sentences describing temporal trends.
+
+```{r}
+# Task 2a
+wildfires$FIRE_DATE <- as.Date(
+  paste(wildfires$FIRE_YEAR, wildfires$DISCOVERY_DOY, sep = "-"),
+  format = "%Y-%j"
+)
+
+# Task 2b
+fires_per_year <- table(wildfires$FIRE_YEAR)
+fires_per_year_df <- as.data.frame(fires_per_year)
+colnames(fires_per_year_df) <- c("FIRE_YEAR", "COUNT")
+
+library(ggplot2)
+ggplot(fires_per_year_df, aes(x = as.numeric(as.character(FIRE_YEAR)), y = COUNT)) +
+  geom_line() +
+  labs(title = "Annual Number of Wildfires",
+       x = "Year",
+       y = "Number of Fires")
+
+# Task 2c
+avg_size_per_year <- aggregate(FIRE_SIZE ~ FIRE_YEAR,
+                               data = wildfires,
+                               FUN = mean)
+
+ggplot(avg_size_per_year,
+       aes(x = FIRE_YEAR, y = FIRE_SIZE)) +
+  geom_line() +
+  labs(title = "Average Fire Size by Year",
+       x = "Year",
+       y = "Average Fire Size (acres)")
+
+# Task 2d
+# The annual number of wildfires fluctuates over time, with noticeable peaks around 2000 and especially 2006, which appears to have the highest number of fires. After 2006, the number of fires generally decreases but still shows variability from year to year. The average fire size also varies substantially across years, with particularly large spikes around 2004 and 2011. This suggests that some years may not necessarily have the most fires but can still experience larger, more severe fires. Overall, both the frequency and the average size of wildfires show considerable year-to-year variation rather than a steady upward or downward trend.
+```
+---
+
+### Task 3 Exploring Spatial Patterns
+
+**(a)** Create a table of fire counts per `STATE` and report the top 10 states.
+
+**(b)** Make a horizontal bar plot of the top 10 states.
+
+**(c)** Make a scatterplot of ignition points (`LONGITUDE` vs `LATITUDE`).
+
+**(d)** Comment briefly on geographic patterns. Optional: you may find it helpful to draw the boundaries of states. 
+
+```{r}
+# Task 3a
+state_counts <- aggregate(OBJECTID ~ STATE,
+                          data = wildfires,
+                          FUN = length)
+colnames(state_counts)[2] <- "n"
+state_counts <- state_counts[order(-state_counts$n), ]
+top10_states <- head(state_counts, 10)
+top10_states
+
+# Task 3b
+ggplot(top10_states,
+       aes(x = reorder(STATE, n), y = n)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = "Top 10 States by Number of Wildfires",
+       x = "State",
+       y = "Number of Fires")
+
+# Task 3c
+ggplot(wildfires,
+       aes(x = LONGITUDE, y = LATITUDE, color = STATE)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Spatial Distribution of Wildfire Ignition Points",
+       x = "Longitude",
+       y = "Latitude")
+
+# Task 3d
+# Wildfire ignition points are clearly concentrated across the continental United States, with particularly dense clusters in the Southeast and parts of the West Coast. California and other western states show strong clustering, which is consistent with the high fire counts observed earlier. There are also visible clusters in the Southeast, including states like Georgia and Florida. Alaska and Hawaii appear separately from the mainland, reflecting their geographic locations. Overall, wildfire occurrences are not evenly distributed across the country and tend to cluster in specific high-risk regions.
+
+
+```
+---
+
+### Task 4 Fire Size Distribution
+
+
+**(a)** Plot a histogram of `FIRE_SIZE` in log scale.
+
+**(b)** Create a boxplot of `FIRE_SIZE` by `FIRE_SIZE_CLASS`.
+
+**(c)** Compute the median, 90th percentile, and 99th percentile of `FIRE_SIZE`.
+
+**(d)** Write 3–4 sentences interpreting the distribution and what it suggests for prediction tasks.
+
+```{r}
+# Task 4a
+wildfires %>% ggplot(aes(x = FIRE_SIZE)) +
+  geom_histogram(bins = 50) +
+  scale_x_log10() +
+  labs(title = "Distribution of Fire Size (Acres)", 
+       x = "Fire size in log-scaled (acres)", y = "Count")
+
+# Task 4b
+ggplot(wildfires, aes(x = FIRE_SIZE_CLASS, y = FIRE_SIZE)) +
+  geom_boxplot() +
+  scale_y_log10() +
+  labs(title = "Fire Size by Fire Size Class",
+       x = "Fire size class", y = "Fire size (log10 scale)") +
+  theme_minimal()
+
+# Task 4c
+size_summary <- wildfires %>%
+  summarise(
+    median_size = median(FIRE_SIZE, na.rm = TRUE),
+    p90_size    = quantile(FIRE_SIZE, 0.90, na.rm = TRUE),
+    p99_size    = quantile(FIRE_SIZE, 0.99, na.rm = TRUE)
+  )
+size_summary
+
+# Task 4ad
+# The distribution of fire size is highly right-skewed, with most fires being very small and a small number of extremely large fires. The median fire size is only 1 acre, while the 90th percentile is 17 acres and the 99th percentile jumps to 480 acres, showing a dramatic increase in the upper tail. This large gap between the median and upper percentiles confirms that a small fraction of fires account for disproportionately large burned areas. For prediction tasks, this suggests that modeling raw fire size may be unstable due to extreme outliers, and using log transformations or focusing on size classes may provide more reliable results. It may also be useful to model large fires separately from smaller fires.
+```
+---
+
+
+### Task 5 Visualizing Fire Size Patterns
+
+**(a)** Create a visualization that illustrates both the spatial and temporal patterns of fire sizes across U.S. states and years. Specifically, construct a heatmap with `STATE` on the y-axis, `FIRE_YEAR` on the x-axis, and the median `FIRE_SIZE` within each state–year combination represented by color intensity.
+
+
+**(b)** Briefly interpret the visualization. Your interpretation should describe any noticeable spatial differences across states, temporal trends over years, or other meaningful patterns observed in the plot.
+
+```{r, fig.width=6, fig.height=6}
+# Task 5a
+state_year_summary <- wildfires %>%
+  group_by(STATE, FIRE_YEAR) %>%
+  summarise(
+    median_size = median(FIRE_SIZE, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+ggplot(state_year_summary,
+       aes(x = FIRE_YEAR, y = STATE, fill = median_size)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "magma", trans = "log10") +
+  labs(
+    title = "Median Fire Size by State and Year",
+    x = "Year",
+    y = "State",
+    fill = "Median fire size\n(acres, log scale)"
+  ) +
+  theme_minimal()
+
+# Task 5b
+# The heatmap shows clear variation in median fire size across both states and years. Most state–year combinations appear darker, indicating that the median fire size is typically small, which is consistent with the overall skewed distribution observed earlier. However, there are occasional lighter patches scattered across different states and years, suggesting periods where median fire sizes were noticeably larger. These spikes do not occur uniformly across all states, indicating that larger fire events are likely driven by localized conditions rather than a consistent national trend. Overall, the visualization highlights substantial spatial and temporal variability in wildfire behavior across the United States.
+```
+---
+### Task 6  Designing Your Own Visualization
+
+**(a)** Create an additional visualization of your own choosing that also highlights spatial and temporal information in fire sizes across states and years.  
+
+**(b)** Provide a short explanation of (1) why you chose this visualization, and (2) what new or complementary insights it reveals compared to plots from the other tasks.
+
+```{r}
+# Task 6a
+year_summary <- wildfires %>%
+  group_by(FIRE_YEAR) %>%
+  summarise(
+    median_size = median(FIRE_SIZE, na.rm = TRUE),
+    n_fires = n(),
+    .groups = "drop"
+  )
+
+ggplot(year_summary,
+       aes(x = FIRE_YEAR, y = median_size)) +
+  geom_line(linewidth = 1) +
+  scale_y_log10() +
+  labs(
+    title = "Median Fire Size Over Time",
+    x = "Year",
+    y = "Median fire size (acres, log scale)"
+  ) +
+  theme_minimal()
+
+# Task 6b
+# (1) I chose this visualization to examine how the typical (median) wildfire size changes over time at the national level. Using the median instead of the mean provides a better representation of a “typical” fire because it is less affected by extremely large fires in the heavily skewed distribution.
+
+# (2) Compared to earlier plots that showed average fire size and overall trends, this visualization highlights how stable the median fire size remains across years. While the mean fire size fluctuated more dramatically, the median stays relatively small, reinforcing the idea that most fires are small and that large fires disproportionately influence averages. This complements previous analyses by emphasizing central tendency rather than extreme values and demonstrates the importance of choosing appropriate summary statistics when working with skewed data.
+```

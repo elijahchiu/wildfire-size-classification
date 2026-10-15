@@ -1,0 +1,13 @@
+"item","value"
+"input_rows",1e+05
+"input_columns",39
+"missing_county",35991
+"old_county_string_groups",4232
+"state_fips_pairs_nonmissing",2385
+"old_panel_rows",1218816
+"old_positive_months",764
+"old_panel_prevalence",0.000626837849191346
+"geography_codes",52
+"large_events",1381
+"duplicate_FOD_ID",0
+"excluded_model_rows",0

@@ -1,108 +1,87 @@
-Predicting Wildfire Incidence in the United States
+# Which recorded wildfires become large?
 
-This project develops a machine learning pipeline to predict the occurrence of **notable wildfires (≥300 acres)** at the **county–month level** across the United States using historical wildfire data (1992–2015).
+I use a 100,000-event wildfire sample to study whether discovery date and location
+can distinguish fires whose final recorded size reaches **300 acres**. The project
+compares logistic regression and Random Forest with the same inputs, trains on
+earlier years, and evaluates ranking and probability quality on later fires.
 
----
+**[Read the full report](https://elijahchiu.github.io/STA-141A-Final-Report/)**
 
-Overview
+## Results
 
-Wildfires are rare but high-impact events. This project frames wildfire prediction as a **binary classification problem**, where the goal is to determine whether at least one notable wildfire occurs in a given county during a given month.
+The 2012–2015 test set contains **14,946 fires**, including **211 large fires
+(1.412%)**. Base models use 1992–2008; forest calibration uses 2009–2011.
 
-To support this, raw wildfire event data was transformed into a **complete panel dataset** covering:
+| Model | ROC-AUC | Average precision | Brier score | Log loss |
+|---|---:|---:|---:|---:|
+| Training-prevalence reference | 0.500 | 0.014 | 0.01392 | 0.07417 |
+| Logistic regression | 0.771 | 0.049 | 0.01406 | 0.07056 |
+| Random Forest | 0.726 | 0.099 | 0.01352 | 0.10432 |
+| Calibrated Random Forest | 0.726 | 0.099 | 0.01369 | 0.06901 |
 
-- **4,232 counties**
-- **50 states**
-- **1992–2015**
-- **1.2M+ observations**
+Logistic regression has higher ROC-AUC; the forest has higher pooled average
+precision. Calibration improves the forest's log loss but slightly worsens its
+Brier score. The report includes annual results and calibration plots, including
+years where the pooled comparison does not hold.
 
----
+## Why I changed the question
 
-Modeling Approach
+The original coursework predicted county-month fire occurrence by zero-filling
+months absent from this event sample. An event missing from a sample does not
+establish that no fire occurred. Inconsistent county names and missing county
+values created further problems. I replaced that target with observed event-level
+labels and retained all 100,000 records. The old AUC claims are retired.
+[Read the audit](AUDIT.md) for reproduced counts and the reasoning behind each fix.
 
-Baseline Model
-- **Logistic Regression**
-- Features:
-  - Seasonal (sin_month, cos_month)
-  - Year (FIRE_YEAR)
-- AUC: **0.640**
+## Reproduce
 
-Final Model
-- **Random Forest Classifier**
-- Features:
-  - Seasonal + temporal + geographic (STATE)
-- Handles:
-  - Nonlinear relationships
-  - Spatial variation
-- AUC: **0.755**
+Use R 4.5.2 and Pandoc (included with RStudio). From the repository root:
 
----
+```r
+# Run once to restore the recorded package environment:
+install.packages("renv", repos = "https://cloud.r-project.org")
+renv::restore(lockfile = "renv.lock", prompt = FALSE)
+```
 
-Key Techniques
+Then run from a terminal:
 
-- **Panel data construction**
-  - County × month grid with zero-fill for no-fire months
-- **Feature engineering**
-  - Cyclical encoding of seasonality using sine/cosine
-- **Class imbalance handling**
-  - Downsampling (3:1 negative-to-positive ratio)
-- **Time-aware validation**
-  - Train: 1992–2008  
-  - Test: 2009–2015  
-  - Rolling validation across years
-- **Model evaluation**
-  - ROC curves and AUC
+```bash
+Rscript scripts/run_analysis.R
+Rscript tests/test_analysis.R
+Rscript scripts/render_report.R
+```
 
----
+The exact CSV is included; no data download, API key, or paid service is needed.
+The analysis checks its SHA-256 before fitting. `scripts/install_dependencies.R`
+is a convenience installer for a current R environment; use the lockfile for the
+recorded versions. The render step reads saved results and writes a self-contained
+`docs/index.html`. Rendering alone does not retrain models. GitHub Actions reruns
+the full pipeline and compares regenerated metrics to the committed results.
 
-Key Findings
+## Files
 
-- Strong **seasonal patterns** (peak in summer months)
-- Significant **geographic variation** (higher risk in western states)
-- Random Forest substantially improves prediction by incorporating spatial information
-- Predicting rare wildfire events remains challenging due to extreme class imbalance (~0.06%)
+| Path | Purpose |
+|---|---|
+| [reports/wildfire_severity.Rmd](reports/wildfire_severity.Rmd) | Current report source |
+| [R/analysis.R](R/analysis.R) | Data checks, features, fitting, calibration, metrics |
+| [data/README.md](data/README.md) | Source attribution, sample provenance, data reuse caveats |
+| [results/](results/) | Test predictions, metrics, audit counts, input hashes, environment |
+| [tests/test_analysis.R](tests/test_analysis.R) | Metric and data-integrity checks |
+| [AUDIT.md](AUDIT.md) | Findings and methodological changes |
+| [VALIDATION.md](VALIDATION.md) | Executed verification |
+| [archive/](archive/) | Superseded coursework sources |
 
----
+## Scope
 
-Tech Stack
+These results concern sampled recorded fires. The sampling procedure was not
+provided, and the apparent parent is [Short's 1992–2015 FPA FOD, fourth
+edition](https://doi.org/10.2737/RDS-2013-0009.4). The analysis does not estimate
+ignition risk, prove discovery-time input availability, or establish performance
+on current fires or unseen regions. Final area is one measure of severity, not
+an estimate of damage. The report explains these limits before presenting results.
 
-- **R**
-- `tidyverse`, `lubridate`
-- `randomForest`
-- `pROC`
-- `ggplot2`
+Original code and writing: [MIT license](LICENSE). Dataset terms and provenance
+are documented separately. Generated HTML and data are excluded from GitHub's
+language statistics so the repository reflects its R implementation.
 
----
-
-## 📂 Repository Structure
-├── wildfire_analysis.Rmd   # Main analysis and modeling pipeline
-├── wildfire_analysis.html  # Final report output
-├── wildfires_sample_100k.csv (or external link)
-
----
-
-Reproducibility
-
-To reproduce results:
-
-1. Clone the repository  
-2. Open the `.Rmd` file in RStudio  
-3. Ensure required packages are installed  
-4. Knit the document to HTML  
-
-If the dataset is not included due to size limits, use the provided download link in the report.
-
----
-
-Future Improvements
-
-- Incorporate weather and climate data (temperature, drought indices)
-- Add vegetation and land-use features
-- Explore gradient boosting models (e.g., XGBoost)
-- Improve handling of extreme class imbalance
-
----
-
-Author
-
-**Elijah Chiu**  
-UC Davis — Statistics & Data Science, Economics  
+Elijah Chiu · UC Davis · STA 141A portfolio revision
