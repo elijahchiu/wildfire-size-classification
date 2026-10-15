@@ -3,15 +3,13 @@ title: "Which recorded wildfires become large?"
 subtitle: "A comparison using 100,000 recorded fires from 1992-2015"
 author: "Elijah Chiu"
 output:
-  pdf_document:
-    latex_engine: xelatex
+  html_document:
     toc: true
     number_sections: true
-    keep_tex: false
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo=FALSE, warning=TRUE, message=FALSE, fig.width=8, fig.height=4.8, dpi=150)
+knitr::opts_chunk$set(echo=TRUE, warning=TRUE, message=FALSE, fig.width=8, fig.height=4.8, dpi=150)
 library(ggplot2)
 source('R/analysis.R')
 a <- readRDS('results/report_data.rds')

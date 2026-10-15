@@ -5,7 +5,7 @@ location help distinguish fires whose final recorded area reached **300 acres**.
 I compared logistic regression with Random Forest using the same inputs, trained
 on earlier years, and tested on later ones.
 
-**[Read the full report (PDF)](https://elijahchiu.github.io/wildfire-size-classification/wildfire_severity.pdf)**
+**[Read the full report (HTML)](https://elijahchiu.github.io/wildfire-size-classification/wildfire_severity.html)**
 
 ## Results
 
@@ -40,7 +40,7 @@ for the counts and reasons for these changes.
 
 ## Reproduce
 
-Use R 4.5.2, Pandoc, and XeLaTeX. Pandoc is included with RStudio. From the project folder,
+Use R 4.5.2 and Pandoc. Pandoc is included with RStudio. From the project folder,
 restore the recorded package versions once:
 
 ```r
@@ -59,7 +59,7 @@ Rscript scripts/render_report.R
 
 The CSV is included, so no download or paid service is needed. Before fitting,
 the analysis checks that the data file matches its recorded SHA-256 hash. The
-render step builds the report PDF and a plain Pages link from saved results; it
+render step builds the report HTML and a plain Pages link from saved results; it
 does not retrain the models. GitHub Actions reruns the analysis and checks the
 results against the saved metrics.
 
@@ -68,6 +68,7 @@ results against the saved metrics.
 | Path | Purpose |
 |---|---|
 | [reports/wildfire_severity.Rmd](reports/wildfire_severity.Rmd) | Current report source |
+| [output/html/wildfire_severity.html](output/html/wildfire_severity.html) | Generated report with code and results |
 | [R/analysis.R](R/analysis.R) | Data checks, features, fitting, calibration, metrics |
 | [data/README.md](data/README.md) | Source attribution, sample provenance, data reuse caveats |
 | [results/](results/) | Test predictions, metrics, audit counts, input hashes, environment |
