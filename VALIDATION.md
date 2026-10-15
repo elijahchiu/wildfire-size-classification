@@ -21,7 +21,7 @@ in results/dependency-versions.csv and transitive versions in renv.lock.
   Pandoc emitted a nonfatal deprecation notice about its mathjax option.
 
 The first independent GitHub run also completed successfully on Linux:
-https://github.com/elijahchiu/STA-141A-Final-Report/actions/runs/38711726253
+https://github.com/elijahchiu/wildfire-size-classification/actions/runs/38711726253
 
 The GitHub workflow independently restores renv.lock, refits, runs the same
 checks, compares committed metric tables within numeric tolerance 1e-6, and
