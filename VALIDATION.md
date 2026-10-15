@@ -20,11 +20,16 @@ in results/dependency-versions.csv and transitive versions in renv.lock.
   curves, reliability, and annual figures. No model-fitting warnings were emitted.
   Pandoc emitted a nonfatal deprecation notice about its mathjax option.
 
+The first independent GitHub run also completed successfully on Linux:
+https://github.com/elijahchiu/STA-141A-Final-Report/actions/runs/38711726253
+
 The GitHub workflow independently restores renv.lock, refits, runs the same
 checks, compares committed metric tables within numeric tolerance 1e-6, and
 renders the report. Its result is available under the repository's Actions tab.
-Local repetition verifies reproducibility in this environment; it does not by
-itself verify all operating systems or clear the study's sampling limitations.
+The local and GitHub runs verify the tested macOS and Linux environments; they
+do not verify every operating system or clear the study's sampling limitations.
+The workflow pins Ubuntu 24.04 and uses checkout v6 to avoid announced runner
+migration and Node.js 20 deprecation notices.
 
 ## Recheck commands
 
