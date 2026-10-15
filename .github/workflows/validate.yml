@@ -16,6 +16,8 @@ jobs:
           use-public-rspm: true
       - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-renv@v2
+      - name: Install PDF tools
+        run: sudo apt-get update && sudo apt-get install --yes texlive-xetex texlive-latex-extra
       - name: Refit and verify
         run: |
           cp results/test_metrics.csv /tmp/expected-metrics.csv

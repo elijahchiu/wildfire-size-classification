@@ -1,16 +1,13 @@
 ---
 title: "Which recorded wildfires become large?"
-subtitle: "A temporal evaluation of a 100,000-event coursework sample, 1992–2015"
+subtitle: "A comparison using 100,000 recorded fires from 1992-2015"
 author: "Elijah Chiu"
 output:
-  html_document:
-    theme: flatly
-    highlight: textmate
+  pdf_document:
+    latex_engine: xelatex
     toc: true
-    toc_float: true
-    code_folding: hide
-    self_contained: true
-    css: report.css
+    number_sections: true
+    keep_tex: false
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +23,7 @@ colors <- c(Logistic='#175a86',Random_forest='#bd5e16',Calibrated_forest='#087f6
 model_labels <- c(Prevalence='Prevalence reference', Seasonal_logistic='Seasonal logistic', Logistic='Logistic regression', Random_forest='Random Forest', Calibrated_forest='Calibrated forest')
 ```
 
-## What this project asks
+# What this project asks
 
 Given a fire in the supplied historical sample, how well can its discovery month,
 year, state or territory, and coordinates distinguish fires whose **final recorded
@@ -39,7 +36,7 @@ probabilities. Its results describe this extract and its later recorded fires;
 they do not establish probabilities for all U.S. wildfires or operational readiness.
 “Large” here means area burned, not ecological damage or suppression difficulty.
 
-The test set contains **`r format(nrow(p),big.mark=',')` recorded fires from 2012–2015**, of which
+The test set contains **`r format(nrow(p),big.mark=',')` recorded fires from 2012-2015**, of which
 **`r sum(p$y)` (`r pct(mean(p$y))`)** reached the threshold. Logistic regression
 has higher ROC-AUC, while the forest has higher average precision. There is no
 single winner across ranking and probability-quality metrics.
@@ -48,7 +45,7 @@ single winner across ranking and probability-quality metrics.
 [Analysis code](https://github.com/elijahchiu/wildfire-size-classification/blob/main/R/analysis.R) ·
 [Audit and revision notes](https://github.com/elijahchiu/wildfire-size-classification/blob/main/AUDIT.md)
 
-## Why the original analysis changed
+# Why the original analysis changed
 
 The original coursework crossed observed county labels with every month and year,
 then treated months without a sampled event as no-fire observations. **An absent
@@ -56,9 +53,9 @@ sampled event does not establish that no fire occurred.** Renaming counties woul
 not repair that outcome definition. Rather than construct unsupported negative
 labels, this revision uses the observed final sizes of individual sampled events.
 
-The code/data audit reproduced 4,232 distinct state–county text pairs,
+The code/data audit reproduced 4,232 distinct state-county text pairs,
 1,218,816 panel rows, and 764 positive panel cells (0.06268%). It also found
-35,991 missing county values and only 2,385 distinct nonmissing state–FIPS pairs.
+35,991 missing county values and only 2,385 distinct nonmissing state-FIPS pairs.
 Those FIPS pairs are identifiers in this extract, not a verified national county
 inventory. Washington's Okanogan appears as `47`, `047`, `Okanogan`,
 `Okanogan County`, `Okanogan C`, and `OKANOGAN`.
@@ -67,9 +64,9 @@ The old logistic model lacked the state feature used by the forest. Its 0.640 an
 0.755 ROC-AUC values are retired: they evaluate a different, unsupported target.
 The original documents remain in Git history; their sources are clearly archived.
 
-## Data and checks
+# Data and checks
 
-The coursework file contains 100,000 rows and 39 columns, covering 1992–2015.
+The coursework file contains 100,000 rows and 39 columns, covering 1992-2015.
 There are 1,381 large fires (1.381%) and 52 geographic codes: the 50 states,
 District of Columbia, and Puerto Rico. FOD_ID is unique in the extract; unique
 identifiers do not rule out all duplicate real incidents. County is not needed by
@@ -101,7 +98,7 @@ selection or model tuning uses the test-year outcomes. Calendar and location
 features follow the original seasonal/geographic hypothesis. The analysis is an
 exploratory portfolio revision, not a preregistered experiment.
 
-## Evaluation design
+# Evaluation design
 
 ```{r splits}
 z<-a$splits; z$prevalence<-pct(z$prevalence)
@@ -109,9 +106,9 @@ names(z)<-c('Partition','First year','Last year','Events','Large fires','Large-f
 knitr::kable(z,align=c('l',rep('r',5)))
 ```
 
-- **1992–2008:** fit all base models and the training-prevalence reference.
-- **2009–2011:** fit the forest's two-parameter logistic calibration only.
-- **2012–2015:** evaluate fixed models and calibration without refitting.
+- **1992-2008:** fit all base models and the training-prevalence reference.
+- **2009-2011:** fit the forest's two-parameter logistic calibration only.
+- **2012-2015:** evaluate fixed models and calibration without refitting.
 
 Time partitions prevent future observations from entering the fitted models.
 They do not test transfer to unseen regions: locations can recur across years.
@@ -120,7 +117,7 @@ retraining folds. Weather-driven and reporting dependencies can remain within an
 between years. No random event-level split or ordinary independent-row confidence
 interval is used to suggest more certainty than this design supports.
 
-### Models and available information
+## Models and available information
 
 The same-feature comparison uses six inputs: sine and cosine of discovery month,
 centered discovery year, state/territory, latitude, and longitude. State is a
@@ -148,7 +145,7 @@ label only. Month, location, and state are plausibly available at discovery, but
 the file contains final compiled values rather than time-stamped snapshots. This
 is not proof that these exact recorded inputs were available to an incident team.
 
-## Test results
+# Test results
 
 ```{r metrics}
 z<-a$scores
@@ -170,7 +167,7 @@ ROC-AUC**, compared with **`r fmt(a$scores$ROC_AUC[a$scores$Model=='Random_fores
 for the forest. The forest's **`r fmt(a$scores$PR_AUC_AP[a$scores$Model=='Random_forest'])`
 AP** exceeds logistic regression's **`r fmt(a$scores$PR_AUC_AP[a$scores$Model=='Logistic'])`**.
 These metrics emphasize different parts of the score distribution: ROC-AUC
-summarizes positive–negative ordering, while AP emphasizes precision as positives
+summarizes positive-negative ordering, while AP emphasizes precision as positives
 are retrieved. A higher AP does not mean high precision at every threshold.
 
 The raw forest has the lowest Brier score but the worst log loss in this table.
@@ -180,14 +177,14 @@ reference despite its stronger ranking. This is why discrimination alone cannot
 establish probability quality. These are descriptive comparisons, without a
 formal claim of statistical superiority.
 
-```{r curves, fig.height=4.7, fig.cap='Test ROC and precision–recall curves. The forest and its calibrated version have identical ranking curves.'}
+```{r curves, fig.height=4.7, fig.cap='Test ROC and precision-recall curves. The forest and its calibrated version have identical ranking curves.'}
 roc_data<-do.call(rbind,lapply(c('Logistic','Random_forest'),function(m){
  s<-p[[m]];o<-order(s,decreasing=TRUE);y<-p$y[o];s<-s[o]
  ends<-c(which(diff(s)!=0),length(s));tp<-cumsum(y)[ends];fp<-ends-tp
  data.frame(x=c(0,fp/sum(y==0)),y=c(0,tp/sum(y)),Model=m,Panel='ROC')
 }))
 pr_data<-do.call(rbind,lapply(c('Logistic','Random_forest'),function(m){
- z<-pr_curve(p$y,p[[m]]);data.frame(x=z$recall,y=z$precision,Model=m,Panel='Precision–recall')
+ z<-pr_curve(p$y,p[[m]]);data.frame(x=z$recall,y=z$precision,Model=m,Panel='Precision-recall')
 }))
 ggplot(rbind(roc_data,pr_data),aes(x,y,color=Model)) + geom_path(linewidth=.7) +
  facet_wrap(~Panel,scales='free') + scale_color_manual(values=colors,labels=model_labels) +
@@ -195,7 +192,7 @@ ggplot(rbind(roc_data,pr_data),aes(x,y,color=Model)) + geom_path(linewidth=.7) +
  theme(legend.position='bottom')
 ```
 
-### Calibration on later events
+## Calibration on later events
 
 The reliability plot groups test probabilities into fixed intervals. Each point
 compares the group's mean probability with its observed large-fire share. Point
@@ -216,7 +213,7 @@ ggplot(rel,aes(pred,observed,color=Model,size=n)) + geom_abline(slope=1,intercep
  theme(legend.position='bottom')
 ```
 
-### Stability across test years
+## Stability across test years
 
 ```{r annual-metrics, fig.cap='Annual performance of the same fixed models. The dashed PR reference is each year’s observed prevalence.'}
 z<-a$yearly[a$yearly$Model %in% c('Logistic','Random_forest'),]
@@ -242,7 +239,7 @@ threshold is chosen on the test set, and no deployment decision is inferred from
 these scores. An operational threshold would require prospective validation and
 explicit costs for missed large fires and false alarms.
 
-## Limits and next steps
+# Limits and next steps
 
 1. **Unknown selection:** the sample's inclusion probabilities are unavailable.
    Neither prevalence nor calibrated probabilities can be generalized to all
@@ -264,27 +261,21 @@ tradeoffs. Further work should first verify the extract's sampling process and
 record-time availability, then test a locked specification on newer data and
 spatial holdouts before considering operational use.
 
-## Reproduce and inspect
+# Reproduce and inspect
 
 Restore the recorded dependency versions with `renv::restore()` first (see the
 repository README), then run from the repository root:
 
 ```bash
-Rscript scripts/install_dependencies.R
 Rscript scripts/run_analysis.R
 Rscript tests/test_analysis.R
 Rscript scripts/render_report.R
 ```
 
 The full run reads the bundled CSV, fits models, writes event-level test
-probabilities and metric tables, verifies them, and builds this self-contained
-HTML. Rendering alone reads saved results and does not refit models. Seeds,
+probabilities and metric tables, verifies them, and builds this PDF. The report
+source and modeling code are available in the repository. Rendering alone reads
+saved results and does not refit models. Seeds,
 parameters, package versions, input hashes, and raw results are committed. The
 GitHub workflow repeats the complete analysis and checks the committed metrics.
 See `results/session-info.txt` and `results/dependency-versions.csv` for the tested environment.
-
-### Modeling source
-
-```{r source-code, results='asis'}
-cat('\n```r\n',paste(readLines('R/analysis.R'),collapse='\n'),'\n```\n',sep='')
-```

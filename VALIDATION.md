@@ -15,10 +15,11 @@ in results/dependency-versions.csv and transitive versions in renv.lock.
 - Confirmed changing county, size-class, or containment fields does not change
   retained rows or predictors; changing final size changes labels only.
 - Checked leap-day conversion and rejection of an invalid nonleap day 366.
-- Regenerated docs/index.html from the saved results and current R source.
-- Opened the HTML in a browser and inspected the introduction, tables, ranking
-  curves, reliability, and annual figures. No model-fitting warnings were emitted.
-  Pandoc emitted a nonfatal deprecation notice about its mathjax option.
+- Rendered the current report source as a plain, seven-page letter PDF and set
+  the Pages landing page to open that PDF.
+- Inspected all seven rendered pages, including the title, tables, charts, and
+  closing page; no clipping or text substitution was visible.
+- Ran tests/test_analysis.R after changing the report format: 25 checks passed.
 
 The first independent GitHub run also completed successfully on Linux:
 https://github.com/elijahchiu/wildfire-size-classification/actions/runs/38711726253
@@ -41,3 +42,11 @@ Rscript scripts/render_report.R
 
 To audit outputs without refitting, inspect results/test_predictions.csv,
 results/test_metrics.csv, results/yearly_metrics.csv, and results/data_audit.csv.
+
+## PDF output (2026-10-15)
+
+The report now uses standard PDF document formatting with XeLaTeX. The former
+web theme, floating contents panel, and custom stylesheet were removed. The report
+PDF is published at `docs/wildfire_severity.pdf`; `docs/index.html` redirects to it.
+The render script also saves the PDF under `output/pdf/`. The GitHub workflow
+installs XeLaTeX packages before rendering the report.

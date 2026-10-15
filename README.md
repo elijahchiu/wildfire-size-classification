@@ -5,7 +5,7 @@ location help distinguish fires whose final recorded area reached **300 acres**.
 I compared logistic regression with Random Forest using the same inputs, trained
 on earlier years, and tested on later ones.
 
-**[Read the full report](https://elijahchiu.github.io/wildfire-size-classification/)**
+**[Read the full report (PDF)](https://elijahchiu.github.io/wildfire-size-classification/wildfire_severity.pdf)**
 
 ## Results
 
@@ -40,7 +40,7 @@ for the counts and reasons for these changes.
 
 ## Reproduce
 
-Use R 4.5.2 and Pandoc, which is included with RStudio. From the project folder,
+Use R 4.5.2, Pandoc, and XeLaTeX. Pandoc is included with RStudio. From the project folder,
 restore the recorded package versions once:
 
 ```r
@@ -59,9 +59,9 @@ Rscript scripts/render_report.R
 
 The CSV is included, so no download or paid service is needed. Before fitting,
 the analysis checks that the data file matches its recorded SHA-256 hash. The
-render step builds `docs/index.html` from saved results; it does not retrain the
-models. GitHub Actions reruns the analysis and checks the results against the
-saved metrics.
+render step builds the report PDF and a plain Pages link from saved results; it
+does not retrain the models. GitHub Actions reruns the analysis and checks the
+results against the saved metrics.
 
 ## Files
 

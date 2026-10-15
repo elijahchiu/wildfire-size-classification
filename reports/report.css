@@ -1,9 +1,0 @@
-body { font-size: 16px; line-height: 1.65; color: #253747; }
-.main-container { max-width: 1120px; }
-h1,h2,h3 { color: #163e55; line-height: 1.25; }
-h2 { margin-top: 2em; border-bottom: 1px solid #dae4e8; padding-bottom: .35em; }
-.subtitle { color: #576d78; font-size: 20px; }
-table { font-size: 14px; }
-pre { font-size: 12px; }
-a { color: #086b85; }
-@media(max-width: 650px) { body { font-size: 15px; } table { display:block; overflow-x:auto; } }
