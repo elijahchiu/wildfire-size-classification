@@ -1,41 +1,47 @@
 # Which recorded wildfires become large?
 
-I use a 100,000-event wildfire sample to study whether discovery date and location
-can distinguish fires whose final recorded size reaches **300 acres**. The project
-compares logistic regression and Random Forest with the same inputs, trains on
-earlier years, and evaluates ranking and probability quality on later fires.
+Using 100,000 historical wildfire records, I checked whether discovery date and
+location help distinguish fires whose final recorded area reached **300 acres**.
+I compared logistic regression with Random Forest using the same inputs, trained
+on earlier years, and tested on later ones.
 
 **[Read the full report](https://elijahchiu.github.io/wildfire-size-classification/)**
 
 ## Results
 
-The 2012–2015 test set contains **14,946 fires**, including **211 large fires
-(1.412%)**. Base models use 1992–2008; forest calibration uses 2009–2011.
+The 2012–2015 test set contains **14,946 sampled fires**, including **211 large
+fires (1.412%)**. Both models are fit on 1992–2008. I use 2009–2011 to adjust
+the forest's predicted probabilities before testing it.
 
 | Model | ROC-AUC | Average precision | Brier score | Log loss |
 |---|---:|---:|---:|---:|
-| Training-prevalence reference | 0.500 | 0.014 | 0.01392 | 0.07417 |
+| Constant-share reference | 0.500 | 0.014 | 0.01392 | 0.07417 |
 | Logistic regression | 0.771 | 0.049 | 0.01406 | 0.07056 |
 | Random Forest | 0.726 | 0.099 | 0.01352 | 0.10432 |
-| Calibrated Random Forest | 0.726 | 0.099 | 0.01369 | 0.06901 |
+| Probability-adjusted Random Forest | 0.726 | 0.099 | 0.01369 | 0.06901 |
 
-Logistic regression has higher ROC-AUC; the forest has higher pooled average
-precision. Calibration improves the forest's log loss but slightly worsens its
-Brier score. The report includes annual results and calibration plots, including
-years where the pooled comparison does not hold.
+ROC-AUC and average precision measure how well a model ranks large fires; higher
+is better. Average precision is affected by how rare large fires are, so the
+constant-share reference is the test-set share of **1.4%**. Brier score and log
+loss measure probability error; lower is better. Logistic regression has the
+higher ROC-AUC, while Random Forest has higher average precision. Adjusting the
+forest's probabilities lowers its log loss but slightly raises its Brier score,
+so neither model leads on every measure. The report also shows results by year.
 
 ## Why I changed the question
 
-The original coursework predicted county-month fire occurrence by zero-filling
-months absent from this event sample. An event missing from a sample does not
-establish that no fire occurred. Inconsistent county names and missing county
-values created further problems. I replaced that target with observed event-level
-labels and retained all 100,000 records. The old AUC claims are retired.
-[Read the audit](AUDIT.md) for reproduced counts and the reasoning behind each fix.
+The original coursework tried to predict whether a county had a fire in a given
+month. It treated months with no event in this sample as months with no fire,
+although a missing event in a sample does not show that no fire occurred. County
+names also varied, and records without county values were dropped. I changed the
+question to whether a recorded fire's final area reached 300 acres and kept all
+100,000 records. The old AUC claims no longer apply. [Read the audit](AUDIT.md)
+for the counts and reasons for these changes.
 
 ## Reproduce
 
-Use R 4.5.2 and Pandoc (included with RStudio). From the repository root:
+Use R 4.5.2 and Pandoc, which is included with RStudio. From the project folder,
+restore the recorded package versions once:
 
 ```r
 # Run once to restore the recorded package environment:
@@ -51,12 +57,11 @@ Rscript tests/test_analysis.R
 Rscript scripts/render_report.R
 ```
 
-The exact CSV is included; no data download, API key, or paid service is needed.
-The analysis checks its SHA-256 before fitting. `scripts/install_dependencies.R`
-is a convenience installer for a current R environment; use the lockfile for the
-recorded versions. The render step reads saved results and writes a self-contained
-`docs/index.html`. Rendering alone does not retrain models. GitHub Actions reruns
-the full pipeline and compares regenerated metrics to the committed results.
+The CSV is included, so no download or paid service is needed. Before fitting,
+the analysis checks that the data file matches its recorded SHA-256 hash. The
+render step builds `docs/index.html` from saved results; it does not retrain the
+models. GitHub Actions reruns the analysis and checks the results against the
+saved metrics.
 
 ## Files
 
@@ -73,15 +78,15 @@ the full pipeline and compares regenerated metrics to the committed results.
 
 ## Scope
 
-These results concern sampled recorded fires. The sampling procedure was not
-provided, and the apparent parent is [Short's 1992–2015 FPA FOD, fourth
-edition](https://doi.org/10.2737/RDS-2013-0009.4). The analysis does not estimate
-ignition risk, prove discovery-time input availability, or establish performance
-on current fires or unseen regions. Final area is one measure of severity, not
-an estimate of damage. The report explains these limits before presenting results.
+These results describe only the supplied sample; its selection method was not
+provided. The apparent source is [Short's 1992–2015 Fire Program Analysis
+Fire-Occurrence Database (FPA FOD), fourth edition](https://doi.org/10.2737/RDS-2013-0009.4).
+This analysis does not estimate where fires will start, confirm that every input
+would be available at discovery time, or show how well the models work on current
+fires or in new regions. Final area is one measure of fire size, not total damage.
+The report discusses these limits alongside the results.
 
-Original code and writing: [MIT license](LICENSE). Dataset terms and provenance
-are documented separately. Generated HTML and data are excluded from GitHub's
-language statistics so the repository reflects its R implementation.
+The code is released under the [MIT license](LICENSE). The dataset's source and
+reuse terms are described in [data/README.md](data/README.md).
 
 Elijah Chiu · UC Davis · STA 141A portfolio revision
