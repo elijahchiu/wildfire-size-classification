@@ -44,9 +44,9 @@ The test set contains **`r format(nrow(p),big.mark=',')` recorded fires from 201
 has higher ROC-AUC, while the forest has higher average precision. There is no
 single winner across ranking and probability-quality metrics.
 
-[Repository](https://github.com/elijahchiu/STA-141A-Final-Report) ·
-[Analysis code](https://github.com/elijahchiu/STA-141A-Final-Report/blob/main/R/analysis.R) ·
-[Audit and revision notes](https://github.com/elijahchiu/STA-141A-Final-Report/blob/main/AUDIT.md)
+[Repository](https://github.com/elijahchiu/wildfire-size-classification) ·
+[Analysis code](https://github.com/elijahchiu/wildfire-size-classification/blob/main/R/analysis.R) ·
+[Audit and revision notes](https://github.com/elijahchiu/wildfire-size-classification/blob/main/AUDIT.md)
 
 ## Why the original analysis changed
 

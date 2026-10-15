@@ -5,7 +5,7 @@ can distinguish fires whose final recorded size reaches **300 acres**. The proje
 compares logistic regression and Random Forest with the same inputs, trains on
 earlier years, and evaluates ranking and probability quality on later fires.
 
-**[Read the full report](https://elijahchiu.github.io/STA-141A-Final-Report/)**
+**[Read the full report](https://elijahchiu.github.io/wildfire-size-classification/)**
 
 ## Results
 
