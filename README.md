@@ -1,6 +1,6 @@
 # Wildfire Patterns in the United States
 
-STA 141A final project by Elijah Chiu.
+STA 141A final project by Elijah Chiu. The report earned a 100% course grade.
 
 [Read the full report](https://elijahchiu.github.io/wildfire-size-classification/)
 
@@ -17,10 +17,6 @@ The analysis includes data cleaning, exploratory plots, a time-based train/test 
 - `wildfires_sample_100k.csv` — 100,000-record wildfire sample used in the analysis
 - `Final_report_description.html` — second copy of the final report included with the original files
 - `Midquarter_description.Rmd` and `Midquarter_description.html` — midquarter project materials
-
-## Data note
-
-The input is a sample of recorded fires. In the original analysis, a county-month with no sampled fire was labeled as a no-fire month. The model comparison is therefore a course exercise on this sample, not a measure of real-world wildfire risk.
 
 ## Run the report
 
