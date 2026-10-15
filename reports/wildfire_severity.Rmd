@@ -271,9 +271,19 @@ Rscript scripts/render_report.R
 ```
 
 The full run reads the bundled CSV, fits models, writes event-level test
-probabilities and metric tables, verifies them, and builds this PDF. The report
-source and modeling code are available in the repository. Rendering alone reads
-saved results and does not refit models. Seeds,
+probabilities and metric tables, verifies them, and builds this HTML report. The
+report shows its table and figure code above; the complete data-checking and
+model-fitting script follows. Rendering alone reads saved results and does not
+refit models. Seeds,
 parameters, package versions, input hashes, and raw results are committed. The
 GitHub workflow repeats the complete analysis and checks the committed metrics.
 See `results/session-info.txt` and `results/dependency-versions.csv` for the tested environment.
+
+# Complete analysis code
+
+This is the script that validates the input, prepares the predictors, fits and
+calibrates the models, and calculates the reported metrics.
+
+```{r complete-analysis-source, echo=FALSE, results='asis'}
+cat("```r\n", paste(readLines("R/analysis.R"), collapse="\n"), "\n```", sep="")
+```

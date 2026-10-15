@@ -378,6 +378,7 @@ years</a></li>
 Limits and next steps</a></li>
 <li><a href="#reproduce-and-inspect" id="toc-reproduce-and-inspect"><span class="toc-section-number">7</span>
 Reproduce and inspect</a></li>
+<li><a href="#complete-analysis-code" id="toc-complete-analysis-code"><span class="toc-section-number">8</span> Complete analysis code</a></li>
 </ul>
 </div>
 
@@ -836,14 +837,132 @@ Rscript tests/test_analysis.R
 Rscript scripts/render_report.R</code></pre>
 <p>The full run reads the bundled CSV, fits models, writes event-level
 test probabilities and metric tables, verifies them, and builds this
-PDF. The report source and modeling code are available in the
-repository. Rendering alone reads saved results and does not refit
-models. Seeds, parameters, package versions, input hashes, and raw
-results are committed. The GitHub workflow repeats the complete analysis
-and checks the committed metrics. See
-<code>results/session-info.txt</code> and
+HTML report. The report shows its table and figure code above; the
+complete data-checking and model-fitting script follows. Rendering alone
+reads saved results and does not refit models. Seeds, parameters,
+package versions, input hashes, and raw results are committed. The
+GitHub workflow repeats the complete analysis and checks the committed
+metrics. See <code>results/session-info.txt</code> and
 <code>results/dependency-versions.csv</code> for the tested
 environment.</p>
+</div>
+<div id="complete-analysis-code" class="section level1" number="8">
+<h1><span class="header-section-number">8</span> Complete analysis
+code</h1>
+<p>This is the script that validates the input, prepares the predictors,
+fits and calibrates the models, and calculates the reported metrics.</p>
+<pre class="r"><code>clip &lt;- function(p) pmin(pmax(p, 1e-06), 1 - 1e-06)
+# Step-integrated precision-recall area (average precision), grouped at ties.
+pr_curve &lt;- function(y, p) {
+    o &lt;- order(p, decreasing = TRUE)
+    y &lt;- y[o]
+    p &lt;- p[o]
+    ends &lt;- c(which(diff(p) != 0), length(p))
+    tp &lt;- cumsum(y)[ends]
+    data.frame(recall = tp/sum(y), precision = tp/ends)
+}
+metrics &lt;- function(y, p) {
+    stopifnot(length(y) == length(p), all(is.finite(p)), all(p &gt;= 0 &amp; p &lt;= 1), all(y %in% 0:1),
+        length(unique(y)) == 2)
+    z &lt;- pr_curve(y, p)
+    n1 &lt;- sum(y)
+    n0 &lt;- length(y) - n1
+    c(ROC_AUC = (sum(rank(p)[y == 1]) - n1 * (n1 + 1)/2)/(n1 * n0), PR_AUC_AP = sum(diff(c(0, z$recall)) *
+        z$precision), Brier = mean((y - p)^2), Log_loss = -mean(y * log(clip(p)) + (1 - y) * log(1 -
+        clip(p))))
+}
+prepare &lt;- function(d) {
+    req &lt;- c(&quot;FOD_ID&quot;, &quot;FIRE_YEAR&quot;, &quot;DISCOVERY_DOY&quot;, &quot;STATE&quot;, &quot;LATITUDE&quot;, &quot;LONGITUDE&quot;, &quot;FIRE_SIZE&quot;)
+    stopifnot(all(req %in% names(d)), !anyDuplicated(d$FOD_ID), !anyNA(d$FOD_ID))
+    date &lt;- as.Date(sprintf(&quot;%d-01-01&quot;, d$FIRE_YEAR)) + d$DISCOVERY_DOY - 1
+    valid &lt;- complete.cases(d[, req]) &amp; is.finite(d$FIRE_SIZE) &amp; d$FIRE_SIZE &gt;= 0 &amp; d$LATITUDE &gt;=
+        -90 &amp; d$LATITUDE &lt;= 90 &amp; d$LONGITUDE &gt;= -180 &amp; d$LONGITUDE &lt;= 180 &amp; d$DISCOVERY_DOY &gt;= 1 &amp;
+        format(date, &quot;%Y&quot;) == as.character(d$FIRE_YEAR) &amp; nzchar(d$STATE)
+    stopifnot(!anyNA(valid))
+    excluded &lt;- sum(!valid)
+    d &lt;- d[valid, ]
+    date &lt;- date[valid]
+    month &lt;- as.integer(format(date, &quot;%m&quot;))
+    # Explicit allowlist: final size is a label, never an input predictor.
+    out &lt;- data.frame(FOD_ID = d$FOD_ID, FIRE_YEAR = d$FIRE_YEAR, large = as.integer(d$FIRE_SIZE &gt;=
+        300), sin_month = sin(2 * pi * month/12), cos_month = cos(2 * pi * month/12), year_centered = d$FIRE_YEAR -
+        2000, STATE = d$STATE, LATITUDE = d$LATITUDE, LONGITUDE = d$LONGITUDE)
+    attr(out, &quot;excluded&quot;) &lt;- excluded
+    out
+}
+run_analysis &lt;- function() {
+    path &lt;- &quot;data/raw/wildfires_sample_100k.csv&quot;
+    stopifnot(digest::digest(file = path, algo = &quot;sha256&quot;) == &quot;4d5c250d32c77a3e522df438fc98074c21815d69536a4ea081f490dc36cfd935&quot;)
+    raw &lt;- read.csv(path, colClasses = c(COUNTY = &quot;character&quot;, FIPS_CODE = &quot;character&quot;))
+    d &lt;- prepare(raw)
+    train &lt;- d[d$FIRE_YEAR &lt;= 2008, ]
+    calibration &lt;- d[d$FIRE_YEAR %in% 2009:2011, ]
+    test &lt;- d[d$FIRE_YEAR &gt;= 2012, ]
+    states &lt;- sort(unique(train$STATE))
+    stopifnot(all(calibration$STATE %in% states), all(test$STATE %in% states))
+    for (nm in c(&quot;train&quot;, &quot;calibration&quot;, &quot;test&quot;)) {
+        part &lt;- get(nm)
+        part$STATE &lt;- factor(part$STATE, levels = states)
+        assign(nm, part)
+    }
+    form &lt;- large ~ sin_month + cos_month + year_centered + STATE + LATITUDE + LONGITUDE
+    glm_fit &lt;- glm(form, data = train, family = binomial())
+    stopifnot(glm_fit$converged, !anyNA(coef(glm_fit)))
+    seasonal_fit &lt;- glm(large ~ sin_month + cos_month + year_centered, data = train, family = binomial())
+    set.seed(141)
+    rf_fit &lt;- randomForest::randomForest(update(form, factor(large) ~ .), data = train, ntree = 300,
+        mtry = 3, nodesize = 50)
+    predict_rf &lt;- function(x) as.numeric(predict(rf_fit, newdata = x, type = &quot;prob&quot;)[, &quot;1&quot;])
+    cal_rf &lt;- predict_rf(calibration)
+    calibrator &lt;- glm(large ~ score, data = data.frame(large = calibration$large, score = qlogis(clip(cal_rf))),
+        family = binomial())
+    stopifnot(calibrator$converged, coef(calibrator)[2] &gt; 0)
+    rf_test &lt;- predict_rf(test)
+    predictions &lt;- data.frame(FOD_ID = test$FOD_ID, year = test$FIRE_YEAR, STATE = test$STATE, y = test$large,
+        Prevalence = mean(train$large), Seasonal_logistic = predict(seasonal_fit, test, type = &quot;response&quot;),
+        Logistic = predict(glm_fit, test, type = &quot;response&quot;), Random_forest = rf_test, Calibrated_forest = predict(calibrator,
+            newdata = data.frame(score = qlogis(clip(rf_test))), type = &quot;response&quot;))
+    models &lt;- names(predictions)[5:ncol(predictions)]
+    scores &lt;- do.call(rbind, lapply(models, function(m) data.frame(Model = m, as.list(metrics(predictions$y,
+        predictions[[m]])))))
+    yearly &lt;- do.call(rbind, lapply(sort(unique(test$FIRE_YEAR)), function(yr) {
+        z &lt;- predictions[predictions$year == yr, ]
+        do.call(rbind, lapply(models, function(m) data.frame(year = yr, n = nrow(z), positives = sum(z$y),
+            prevalence = mean(z$y), Model = m, as.list(metrics(z$y, z[[m]])))))
+    }))
+    splits &lt;- do.call(rbind, lapply(c(&quot;train&quot;, &quot;calibration&quot;, &quot;test&quot;), function(nm) {
+        x &lt;- get(nm)
+        data.frame(split = nm, start = min(x$FIRE_YEAR), end = max(x$FIRE_YEAR), n = nrow(x), positives = sum(x$large),
+            prevalence = mean(x$large))
+    }))
+    old &lt;- raw[!is.na(raw$STATE) &amp; !is.na(raw$COUNTY) &amp; raw$COUNTY != &quot;&quot;, ]
+    old$month &lt;- as.integer(format(as.Date(sprintf(&quot;%d-01-01&quot;, old$FIRE_YEAR)) + old$DISCOVERY_DOY -
+        1, &quot;%m&quot;))
+    counties &lt;- nrow(unique(old[c(&quot;STATE&quot;, &quot;COUNTY&quot;)]))
+    positive_months &lt;- nrow(unique(old[old$FIRE_SIZE &gt;= 300, c(&quot;STATE&quot;, &quot;COUNTY&quot;, &quot;FIRE_YEAR&quot;, &quot;month&quot;)]))
+    fips &lt;- raw[!is.na(raw$FIPS_CODE) &amp; nzchar(raw$FIPS_CODE), c(&quot;STATE&quot;, &quot;FIPS_CODE&quot;)]
+    audit &lt;- data.frame(item = c(&quot;input_rows&quot;, &quot;input_columns&quot;, &quot;missing_county&quot;, &quot;old_county_string_groups&quot;,
+        &quot;state_fips_pairs_nonmissing&quot;, &quot;old_panel_rows&quot;, &quot;old_positive_months&quot;, &quot;old_panel_prevalence&quot;,
+        &quot;geography_codes&quot;, &quot;large_events&quot;, &quot;duplicate_FOD_ID&quot;, &quot;excluded_model_rows&quot;), value = c(nrow(raw),
+        ncol(raw), sum(is.na(raw$COUNTY) | raw$COUNTY == &quot;&quot;), counties, nrow(unique(fips)), counties *
+            24 * 12, positive_months, positive_months/(counties * 24 * 12), length(unique(raw$STATE)),
+        sum(d$large), sum(duplicated(raw$FOD_ID)), attr(d, &quot;excluded&quot;)))
+    write.csv(scores, &quot;results/test_metrics.csv&quot;, row.names = FALSE)
+    write.csv(yearly, &quot;results/yearly_metrics.csv&quot;, row.names = FALSE)
+    write.csv(splits, &quot;results/splits.csv&quot;, row.names = FALSE)
+    write.csv(audit, &quot;results/data_audit.csv&quot;, row.names = FALSE)
+    write.csv(predictions, &quot;results/test_predictions.csv&quot;, row.names = FALSE)
+    write.csv(data.frame(term = names(coef(calibrator)), estimate = coef(calibrator)), &quot;results/calibration_coefficients.csv&quot;,
+        row.names = FALSE)
+    saveRDS(list(raw_summary = audit, splits = splits, scores = scores, yearly = yearly, predictions = predictions,
+        annual = aggregate(large ~ FIRE_YEAR, d, mean), month = aggregate(as.integer(raw$FIRE_SIZE &gt;=
+            300), list(month = as.integer(format(as.Date(sprintf(&quot;%d-01-01&quot;, raw$FIRE_YEAR)) + raw$DISCOVERY_DOY -
+            1, &quot;%m&quot;))), mean), calibration = coef(calibrator)), &quot;results/report_data.rds&quot;)
+    writeLines(capture.output(sessionInfo()), &quot;results/session-info.txt&quot;)
+    print(splits)
+    print(scores)
+    print(audit)
+}</code></pre>
 </div>
 
 
