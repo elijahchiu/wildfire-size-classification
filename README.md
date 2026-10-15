@@ -1,23 +1,27 @@
 # Wildfire Patterns in the United States
 
-STA 141A final project by Elijah Chiu. Using R, I explored seasonal and regional patterns in U.S. wildfire records from 1992–2015 and compared two models that classify county-months by whether the sample contained a recorded fire of 300 acres or more.
+STA 141A final project by Elijah Chiu.
 
-[Read the original HTML report](https://elijahchiu.github.io/wildfire-size-classification/)
+[Read the full report](https://elijahchiu.github.io/wildfire-size-classification/)
 
-## What’s in the project
+## Project
 
-- `Final_report.Rmd` — source for the final analysis and report
+Using R, I explored seasonal and regional patterns in a sample of U.S. wildfire records from 1992 to 2015. The report defines a notable fire as one that burned at least 300 acres, then compares logistic regression and random forest models for classifying county-months with a recorded notable fire.
+
+The analysis includes data cleaning, exploratory plots, a time-based train/test split, and a comparison of model ROC AUC. The HTML report shows the R code alongside the analysis and results.
+
+## Files
+
+- `Final_report.Rmd` — source for the final report
 - `Final_report.html` — knitted final report
-- `wildfires_sample_100k.csv` — the 100,000-record dataset used in the analysis
+- `wildfires_sample_100k.csv` — 100,000-record wildfire sample used in the analysis
+- `Final_report_description.html` — second copy of the final report included with the original files
 - `Midquarter_description.Rmd` and `Midquarter_description.html` — midquarter project materials
-- `Final_report_description.html` — duplicate report file included with the original project files
 
-The report includes logistic regression and random forest models, along with the R code, plots, and results.
+## Data note
 
-## A note on the results
+The input is a sample of recorded fires. In the original analysis, a county-month with no sampled fire was labeled as a no-fire month. The model comparison is therefore a course exercise on this sample, not a measure of real-world wildfire risk.
 
-This is the original course analysis. The data are a sample of recorded fires, but the analysis also labels county-months with no sampled fire as if no fire occurred. That means the reported model scores should not be treated as verified estimates of real-world wildfire risk.
+## Run the report
 
-## Reproduce the report
-
-Open `Final_report.Rmd` in RStudio with `wildfires_sample_100k.csv` in the same folder, then use **Knit**. The report uses `tidyverse`, `lubridate`, `maps`, `pROC`, and `randomForest`.
+Open `Final_report.Rmd` in RStudio with `wildfires_sample_100k.csv` in the same folder, then select **Knit**. The report uses `tidyverse`, `lubridate`, `maps`, `pROC`, and `randomForest`.
