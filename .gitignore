@@ -1,0 +1,2 @@
+# Local renv package installations are machine-specific.
+/renv/library/
